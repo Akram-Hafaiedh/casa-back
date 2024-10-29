@@ -4,11 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -18,18 +18,20 @@ class AuthController extends Controller
      * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $credentials = $request->only('email', 'password');
 
         if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+            $user = Auth::user()->load('role');
             $token = $user->createToken('token')->plainTextToken;
 
             return response()->json([
                 'status' => ['code' => 200, 'message' => 'Login successful'],
-                'token' => $token,
-                'user' => $user
+                'data'=>[
+                    'token' => $token,
+                    'user' => $user
+                ]
             ]);
         }
 
@@ -100,12 +102,13 @@ class AuthController extends Controller
      * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function me(Request $request)
+    public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'status' => ['code' => 200, 'message' => 'User retrieved successfully.'],
-            'user' => $request->user()
+            'data'=>['user' => $request->user()->load('role')],
+            'status' => ['code'=> 200, 'message'=>'User retrieved successfully.'],
         ]);
     }
+
 }
 
