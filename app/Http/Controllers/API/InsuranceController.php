@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Role;
-use App\Http\Requests\StoreRoleRequest;
-use App\Http\Requests\UpdateRoleRequest;
+use App\Models\Insurance;
+use App\Http\Requests\StoreInsuranceRequest;
+use App\Http\Requests\UpdateInsuranceRequest;
 
-class RoleController extends Controller
+class InsuranceController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -27,7 +27,7 @@ class RoleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreRoleRequest $request)
+    public function store(StoreInsuranceRequest $request)
     {
         //
     }
@@ -35,7 +35,7 @@ class RoleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Role $role)
+    public function show(Insurance $insurance)
     {
         //
     }
@@ -43,7 +43,7 @@ class RoleController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Role $role)
+    public function edit(Insurance $insurance)
     {
         //
     }
@@ -51,7 +51,7 @@ class RoleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateRoleRequest $request, Role $role)
+    public function update(UpdateInsuranceRequest $request, Insurance $insurance)
     {
         //
     }
@@ -59,7 +59,7 @@ class RoleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Role $role)
+    public function destroy(Insurance $insurance)
     {
         //
     }

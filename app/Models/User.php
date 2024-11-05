@@ -19,10 +19,22 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'first_name',
+        'last_name',
         'email',
+        'birthday',
+        'id_passport',
+        'address',
+        'city',
+        'postal_code',
+        'ahv_number',
+        'phone',
+        'documents',
         'password',
-        'role_id'
+        'role_id',
+        'email_verified_at',
+        'password_reset_token',
+        'password_reset_token_expires_at',
     ];
 
     /**
@@ -32,7 +44,13 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'role_id',
         'remember_token',
+        'password_reset_token',
+        'password_reset_token_expires_at',
+        'created_at',
+        'updated_at',
+        'email_verified_at',
     ];
 
     /**
@@ -45,10 +63,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birthday' => 'date',
         ];
     }
 
     public function role() {
         return $this->belongsTo(Role::class);
+    }
+
+    public function vacations() {
+        return $this->hasMany(Vacation::class);
+    }
+
+    public function contract() {
+        return $this->hasOne(Contract::class);
+    }
+
+    public function documents() {
+        return $this->hasMany(UserDocument::class);
     }
 }
