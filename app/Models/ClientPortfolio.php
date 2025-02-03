@@ -26,4 +26,9 @@ class ClientPortfolio extends Model
     {
         return $this->hasMany(Tax::class);
     }
+
+    // public function documents() : HasMany
+    // {
+    //     return $this->hasMany(ClientDocument::class);
+    // }
 }

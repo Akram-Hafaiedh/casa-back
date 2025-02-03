@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Insurance extends Model
 {
+    protected $table = 'client_insurances';
+    
     protected $fillable = [
-        'client_portfolio_id',
+        'client_id',
         'type',
         'agency',
         'policy_number',
@@ -17,10 +19,6 @@ class Insurance extends Model
         'cancellation_period',
         'payment_amount',
         'payment_frequency',
-
-    ];
-    protected $hidden = [
-        'client_portfolio_id',
     ];
 
     protected $casts = [
@@ -28,8 +26,8 @@ class Insurance extends Model
         'expiration_date' => 'date',    
     ];
 
-    public function portfolio()
+    public function client()
     {
-        return $this->belongsTo(ClientPortfolio::class);
+        return $this->belongsTo(Client::class);
     }
 }

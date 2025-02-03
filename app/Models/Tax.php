@@ -7,18 +7,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Tax extends Model
 {
+    protected $table = 'client_taxes';
     protected $guarded = [];
 
     protected $fillable = [
+        'client_id',
         'name',
         'percentage',
         'type',
-        'documents',
     ];
 
 
-    public function portfolio() : BelongsTo
+    public function client() : BelongsTo
     {
-        return $this->belongsTo(ClientPortfolio::class);
+        return $this->belongsTo(Client::class);
     }
+
+    // public function documents()
+    // {
+    //     return $this->morphMany(ClientDocument::class, 'documentable');
+    // }
 }

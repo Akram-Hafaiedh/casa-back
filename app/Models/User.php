@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -20,6 +22,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'first_name',
+        'logo',
         'last_name',
         'email',
         'birthday',
@@ -29,7 +32,7 @@ class User extends Authenticatable
         'postal_code',
         'ahv_number',
         'phone',
-        'documents',
+        // 'documents',
         'password',
         'role_id',
         'email_verified_at',
@@ -67,19 +70,35 @@ class User extends Authenticatable
         ];
     }
 
-    public function role() {
-        return $this->belongsTo(Role::class);
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class);
     }
 
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles->contains('name', $roleName);
+    }
     public function vacations() {
-        return $this->hasMany(Vacation::class);
+        return $this->hasMany(Vacation::class, 'user_vacations');
     }
 
-    public function contract() {
-        return $this->hasOne(Contract::class);
+    public function contract(): HasOne
+    {
+        return $this->hasOne(Contract::class, 'user_contracts');
     }
 
-    public function documents() {
-        return $this->hasMany(UserDocument::class);
+    public function projects() {
+        return $this->belongsToMany(Project::class, 'project_user');
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }

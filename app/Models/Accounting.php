@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Accounting extends Model
 {
+
+    protected $table = 'client_accountings';
+    
     protected $fillable = [
-        'portfolio_id',
+        'client_id',
         'contract_start_date',
         'tax_included',
-        'documents',
+        'status',
     ];
 
     protected $casts = [
@@ -19,13 +22,18 @@ class Accounting extends Model
     ];
 
     protected $hidden = [
-        'portfolio_id',
         'created_at',
         'updated_at',
     ];
 
-    public function portfolio(): BelongsTo
+    public function client(): BelongsTo
     {
-        return $this->belongsTo(ClientPortfolio::class);
+        return $this->belongsTo(Client::class);
     }
+
+
+    // public function documents()
+    // {
+    //     return $this->morphMany(ClientDocument::class, 'documentable');
+    // }
 }

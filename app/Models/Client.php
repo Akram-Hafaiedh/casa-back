@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
@@ -25,8 +26,29 @@ class Client extends Model
     protected $casts = [
         'birthday' => 'date',
     ];
-    
-    public function portfolio(){
-        return $this->hasOne(ClientPortfolio::class);
+
+    public function insurances(): HasMany
+    {
+        return $this->hasMany(Insurance::class);
     }
+
+    
+    public function accountings() : HasMany
+    {
+        return $this->hasMany(Accounting::class);
+    }
+
+    public function taxes() : HasMany
+    {
+        return $this->hasMany(Tax::class);
+    }
+
+    // public function documents()
+    // {
+    //     return $this->hasMany(ClientDocument::class);
+    // }
+    
+    // public function portfolio(){
+    //     return $this->hasOne(ClientPortfolio::class);
+    // }
 }

@@ -35,7 +35,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Casa Group, {{ $user->name }}!</h1>
+        <h1>Welcome to Casa Group, {{ $user->first_name }} {{ $user->last_name }}!</h1>
         <p>We're thrilled to have you join our staff. As part of your onboarding, please set your password by clicking the button below:</p>
         <a href="{{ $link }}" class="button">Set Your Password</a>
         <p>If you run into any issues or have questions, our support team is here to help you every step of the way.</p>

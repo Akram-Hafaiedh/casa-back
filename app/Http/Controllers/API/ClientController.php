@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
+use App\Models\ClientDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\DocumentHelper;
 
 class ClientController extends Controller
 {
@@ -32,7 +35,6 @@ class ClientController extends Controller
                 ->orWhere('birthday', 'like', '%' . $search. '%')
                 ->orWhere('phone', 'like', '%' . $search. '%');
         })
-        ->with('')
         ->paginate($limit, ['*'], 'page', $page);
 
         return response()->json([
@@ -48,47 +50,52 @@ class ClientController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $data = $request->all();
+        // dd($data['accountings'], $data['insurances']);
 
+        $user = Auth::user();
+        
         $clientValidator = Validator::make($data, [
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
+            'firstName' => 'required|string|max:100',
+            'lastName' => 'required|string|max:100',
             // 'company_name' => 'nullable|string|max:100',
             'birthday' => 'required|date',
             'gender' => 'nullable|string|max:10',
             'phone' => 'required|string|max:255|unique:clients',
             'address' => 'required|string|max:255',
-            'postal_code' => 'required|string|max:10',
+            'postalCode' => 'required|numeric',
             'city' => 'required|string|max:100',
             'email' => 'required|string|email|max:255|unique:clients',
-            'id_passport' => 'required|string|max:50|unique:clients',
+            'idPassport' => 'required|string|max:50|unique:clients,id_passport',
 
-            'portfolio.insurances' => 'required|array',
-            'portfolio.insurances.*.type' => 'required|string|max:255',
-            'portfolio.insurances.*.policy_number' => 'required|string|max:255',
-            'portfolio.insurances.*.agency' => 'required|string|max:255',
-            'portfolio.insurances.*.inception_date' => 'required|date',
-            'portfolio.insurances.*.expiration_date' => 'nullable|date',
-            'portfolio.insurances.*.status' => 'required|string|max:255',
-            'portfolio.insurances.*.cancellation_period' => 'required|numeric',
-            'portfolio.insurances.*.payment_amount' => 'required|decimal:2',
-            'portfolio.insurances.*.payment_frequency' => 'required|string|max:255',
-            'portfolio.insurances.*.documents' => 'nullable|file',
+            'insurances' => 'required|array',
+            'insurances.*.type' => 'required|string|max:255',
+            'insurances.*.policy_number' => 'required|string|max:255',
+            'insurances.*.agency' => 'required|string|max:255',
+            'insurances.*.inception_date' => 'required|date',
+            'insurances.*.expiration_date' => 'nullable|date',
+            'insurances.*.status' => 'required|string|max:255',
+            'insurances.*.cancellation_period' => 'required|numeric',
+            'insurances.*.payment_amount' => 'required|numeric',
+            'insurances.*.payment_frequency' => 'required|string|max:255',
 
-            'portfolio.accountings' => 'required|array',
-            'portfolio.accountings.*.type' => 'required|string|max:255',
-            'portfolio.accountings.*.start_date' => 'required|date',
-            'portfolio.accountings.*.end_date' => 'nullable|date',
-            'portfolio.accountings.*.status' => 'required|string|max:255',
-            'portfolio.accountings.*.documents' => 'nullable|file',
+            'accountings' => 'required|array',
+            // 'portfolio.accountings.*.type' => 'required|string|max:255', // this should
+            'accountings.*.start_date' => 'required|date',
+            'accountings.*.end_date' => 'nullable|date',
+            'accountings.*.tax_included' => 'required|in:0,1',
+            'accountings.*.status' => 'required|string|max:255',
+            'accountings.*.documents' => 'nullable|array',
+            'accountings.*.documents.*' => 'file|mimes:pdf,jpg,png',
 
-            'portfolio.tax' => 'required|array',
-            'portfolio.tax.*.name' => 'required|string|max:255',
-            'portfolio.tax.*.percentage' => 'required|decimal:2',
-            'portfolio.tax.*.type' => 'required|string|max:255',
-            'portfolio.tax.*.documents' => 'nullable|file',
+            'taxes' => 'required|array',
+            'taxes.*.name' => 'required|string|max:255',
+            'taxes.*.type' => 'required|string|max:255',
+            'taxes.*.value' => 'required|string|max:255',
+            'taxes.*.documents' => 'nullable|array',
+            'taxes.*.documents.*' => 'file|mimes:pdf,jpg,png',
         ]);
 
         if ($clientValidator->fails()) {
@@ -102,8 +109,8 @@ class ClientController extends Controller
         try {
 
             $client = Client::create([
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
+                'first_name' => $data['firstName'],
+                'last_name' => $data['lastName'],
                 // 'company_name' => $data['company_name']?? null,
                 'email' => $data['email'],
                 'birthday' => $data['birthday'],
@@ -111,15 +118,14 @@ class ClientController extends Controller
                 'phone' => $data['phone'],
                 'address' => $data['address'],
                 'city' => $data['city'],
-                'id_passport' => $data['id_passport'],
-                'postal_code' => $data['postal_code'],
+                'id_passport' => $data['idPassport'],
+                'postal_code' => $data['postalCode'],
             ]);
 
-            $portfolio = $client->portfolio()->create([]);
             $clientDocumentsPath = "public/clients/{$user->id}";
 
-            foreach ($data['portfolio']['insurances'] as $insurance) {
-                $insuranceInstance =$portfolio->insurances()->create([
+            foreach ($data['insurances'] as $insurance) {
+                $client->insurances()->create([
                     'type' => $insurance['type'],
                     'agency' => $insurance['agency'],
                     'policy_number' => $insurance['policy_number'],
@@ -130,79 +136,82 @@ class ClientController extends Controller
                     'payment_amount' => $insurance['payment_amount'],
                     'payment_frequency' => $insurance['payment_frequency'],
                 ]);
-
-                if ($request->hasFile('portfolio.insurances.documents')) {
-                    $insuranceDocuments = [];
-                    foreach ($insurance['documents'] as $document) {
-                        $documentPath = $document->store("{$clientDocumentsPath}/insurances/{$portfolio->id}");
-                        $insuranceDocuments[] = $documentPath;
-                    }
-                    $insuranceInstance->documents = $insuranceDocuments;
-                    $insuranceInstance->save();
-                }
             }
-            foreach ($data['portfolio']['accountings'] as $accounting) {
-                $accountingInstance = $portfolio->accountings()->create([
-                    'type' => $accounting['type'],
-                    'start_date' => $accounting['start_date'],
-                    'end_date' => $accounting['end_date']?? null,
+            foreach ($data['accountings'] as $accounting) {
+                $accountingInstance = $client->accountings()->create([
                     'status' => $accounting['status'],
+                    'contract_start_date' => $accounting['start_date'],
+                    'end_date' => $accounting['end_date']?? null,
+                    'tax_included' => $accounting['tax_included'] ?? 0,
                 ]);
-                if ($request->hasFile('portfolio.accountings.documents')) {
-                    $accountingDocuments = [];
-                    foreach ($accounting['documents'] as $document) {
-                        $documentPath = $document->store("{$clientDocumentsPath}/accountings/{$portfolio->id}");
-                        $accountingDocuments[] = $documentPath;
-                    }
-                    $accountingInstance->documents = $accountingDocuments;
-                    $accountingInstance->save();
+                if (isset($accounting['documents'])) {
+                    DocumentHelper::saveDocuments(
+                        $accounting['documents'], // Uploaded files
+                        "{$clientDocumentsPath}/accountings/{$user->id}", // Path
+                        'accounting', // Document type
+                        $accountingInstance, // Associated model
+                        $client->id // Client ID
+                    );
                 }
             }
-            foreach ($data['portfolio']['tax'] as $tax) {
-                $taxInstance = $portfolio->tax()->create([
+            foreach ($data['taxes'] as $tax) {
+                $taxInstance = $client->taxes()->create([
                     'name' => $tax['name'],
-                    'percentage' => $tax['percentage'],
+                    'value' => $tax['value'],
                     'type' => $tax['type'],
                 ]);
-                if ($request->hasFile('portfolio.tax.documents')) {
-                    $taxDocuments = [];
-                    foreach ($tax['documents'] as $document) {
-                        $documentPath = $document->store("{$clientDocumentsPath}/tax/{$portfolio->id}");
-                        $taxDocuments[] = $documentPath;
-                    }
-                    $taxInstance->documents = $taxDocuments;
-                    $taxInstance->save();
+                if (isset($tax['documents'])) {
+                    DocumentHelper::saveDocuments(
+                        $tax['documents'], // Uploaded files
+                        "{$clientDocumentsPath}/taxes/{$user->id}", // Path
+                        'tax', // Document type
+                        $taxInstance, // Associated model
+                        $client->id // Client ID
+                    );
                 }
             }
             DB::commit();
 
             return response()->json([
-                'status' => ['code' => 201, 'message' => 'Client created successfully with their portfolio.'],
-                'data' => ['client' => $client->load('portfolio.insurances', 'portfolio.accountings', 'portfolio.taxes')]
+                'status' => ['code' => 201, 'message' => 'Client created successfully.'],
+                'data' => ['client' => $client->load('insurances', 'accountings', 'taxes')]
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            
             return response()->json([
-                'status' => ['code' => 500, 'message' => 'Something went wrong.', 'errors' => $e->getMessage()],
+                'status' => ['code' => 500, 'message' => 'Something went wrong.', 'errors' => $e->__toString()],
             ]);
         }
 
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreClientRequest $request)
-    {
-        //
-    }
 
     /**
      * Display the specified resource.
      */
-    public function show(Client $client)
+    public function show(String $clientId): JsonResponse
     {
-        //
+        $client = Client::with('insurances', 'accountings', 'taxes', 'documents')->find($clientId);
+
+        if (!$client) {
+            return response()->json([
+                'status' => [
+                    'code' => 404,
+                    'message' => 'Client not found.'
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'status' => [
+                'code' => 200,
+                'message' => 'Client retrieved successfully.'
+            ],
+            'data' => [
+                'customer' => $client
+            ]
+        ]);
     }
 
     /**
@@ -227,5 +236,34 @@ class ClientController extends Controller
     public function destroy(Client $client)
     {
         //
+    }
+
+    public function deleteClientTax(String $clientId, String $taxId): JsonResponse
+    {
+        $client = Client::find($clientId);
+        if (!$client) {
+            return response()->json([
+                'status' => [
+                    'code' => 404,
+                    'message' => 'Client not found.'
+                ]
+            ]);
+        }
+        $tax = $client->taxes()->find($taxId);
+        if (!$tax) {
+            return response()->json([
+                'status' => [
+                    'code' => 404,
+                    'message' => 'Tax not found.'
+                ]
+            ]);
+        }
+        $tax->delete();
+        return response()->json([
+            'status' => [
+                'code' => 200,
+                'message' => 'Tax deleted successfully.'
+            ]
+        ]);
     }
 }
